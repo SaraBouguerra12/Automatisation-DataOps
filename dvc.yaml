@@ -18,15 +18,15 @@ stages:
 
   preprocess:
     cmd: python -m src.preprocessing.run
-    deps: [data/raw, src/preprocessing, src/validation/schemas.py]
+    deps: [data/raw, src/preprocessing, src/validation, src/common]
     params: [{configs/params.yaml: [seed, preprocessing]}]
-    outs: [data/interim/clean.parquet]
+    outs: [data/interim/clean.parquet, data/logs/preprocess.json, data/logs/preprocess_rejects.csv]
 
   align:
     cmd: python -m src.alignment.dedup_groups
     deps: [data/interim/clean.parquet, src/alignment/dedup_groups.py]
     params: [{configs/params.yaml: [seed, alignment]}]
-    outs: [data/interim/aligned.parquet]
+    outs: [data/interim/aligned.parquet, data/logs/align.json, data/logs/align_rejects.csv]
 
   split:
     cmd: python -m src.alignment.split
@@ -36,19 +36,22 @@ stages:
 
   build_manifest:
     cmd: python -m src.export.manifest
-    deps: [data/interim/split.parquet, src/export/manifest.py]
-    outs: [data/processed/manifest.parquet]
+    deps: [data/interim/split.parquet, data/logs/preprocess.json, data/logs/preprocess_rejects.csv,
+           data/logs/align.json, data/logs/align_rejects.csv, src/export/manifest.py, src/validation/schemas.py]
+    outs: [data/processed/manifest.parquet, data/logs/rejects.csv, data/logs/counters.csv, data/logs/run_summary.json]
 
-  quality_gate:            # échoue (code != 0) si un contrôle critique échoue
+  quality_gate:            # échoue (code 1) si un contrôle critique échoue : le pipeline s'arrête
     cmd: python -m src.validation.quality_gate
-    deps: [data/processed/manifest.parquet, src/validation/quality_gate.py]
+    deps: [data/processed/manifest.parquet, data/logs/rejects.csv, data/logs/counters.csv, data/raw/hateful_memes,
+           src/validation/quality_gate.py, src/validation/labels.py]
     params: [{configs/params.yaml: [quality]}]
+    outs: [reports/quality_tests.csv]
     metrics: [{reports/quality.json: {cache: false}}]
 
   report:
     cmd: python -m src.reporting.data_report
-    deps: [data/processed/manifest.parquet, src/reporting/data_report.py]
-    outs: [reports/data_report.html]
+    deps: [data/processed/manifest.parquet, data/logs/counters.csv, reports/quality_tests.csv, src/reporting/data_report.py]
+    outs: [reports/data_report.html, reports/stats_summary.csv, reports/label_mapping.csv]
 
   # --- Étapes à brancher plus tard (Partie B et tâches suivantes) ---
   # extract_features:  cmd: python -m src.fusion.extract_features   # mise en cache des représentations

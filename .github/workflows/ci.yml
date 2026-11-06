@@ -10,4 +10,4 @@ jobs:
       - run: pip install -r requirements.txt
       - run: make lint
       - run: make test
-      # Étape 4 du guide : exécuter le pipeline sur un échantillon réduit (make sample)
+      - run: make sample
