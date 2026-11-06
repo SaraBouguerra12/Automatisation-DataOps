@@ -18,7 +18,7 @@ stages:
 
   preprocess:
     cmd: python -m src.preprocessing.run
-    deps: [data/raw, src/preprocessing, src/validation, src/common]
+    deps: [data/raw/hateful_memes, data/raw/sentiment140, src/preprocessing, src/validation, src/common]
     params: [{configs/params.yaml: [seed, preprocessing]}]
     outs: [data/interim/clean.parquet, data/logs/preprocess.json, data/logs/preprocess_rejects.csv]
 
