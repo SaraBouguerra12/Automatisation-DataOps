@@ -1,0 +1,56 @@
+# Pipeline de données : une seule commande -> `dvc repro` (ou `make pipeline`)
+stages:
+  ingest_hateful_memes:
+    cmd: python -m src.ingestion.kaggle_source hateful_memes
+    deps: [src/ingestion/kaggle_source.py]
+    params: [{configs/params.yaml: [ingestion.kaggle.hateful_memes]}]
+    outs: [data/raw/hateful_memes]
+
+  ingest_sentiment140:
+    cmd: python -m src.ingestion.kaggle_source sentiment140
+    deps: [src/ingestion/kaggle_source.py]
+    params: [{configs/params.yaml: [ingestion.kaggle.sentiment140]}]
+    outs: [data/raw/sentiment140]
+
+  # ingest_reddit:   # optionnel (identifiants API requis) ; persist car la collecte n'est pas déterministe
+  #   cmd: python -m src.ingestion.reddit_source
+  #   outs: [{data/raw/reddit: {persist: true}}]
+
+  preprocess:
+    cmd: python -m src.preprocessing.run
+    deps: [data/raw, src/preprocessing, src/validation/schemas.py]
+    params: [{configs/params.yaml: [seed, preprocessing]}]
+    outs: [data/interim/clean.parquet]
+
+  align:
+    cmd: python -m src.alignment.dedup_groups
+    deps: [data/interim/clean.parquet, src/alignment/dedup_groups.py]
+    params: [{configs/params.yaml: [seed, alignment]}]
+    outs: [data/interim/aligned.parquet]
+
+  split:
+    cmd: python -m src.alignment.split
+    deps: [data/interim/aligned.parquet, src/alignment/split.py]
+    params: [{configs/params.yaml: [seed, split]}]
+    outs: [data/interim/split.parquet]
+
+  build_manifest:
+    cmd: python -m src.export.manifest
+    deps: [data/interim/split.parquet, src/export/manifest.py]
+    outs: [data/processed/manifest.parquet]
+
+  quality_gate:            # échoue (code != 0) si un contrôle critique échoue
+    cmd: python -m src.validation.quality_gate
+    deps: [data/processed/manifest.parquet, src/validation/quality_gate.py]
+    params: [{configs/params.yaml: [quality]}]
+    metrics: [{reports/quality.json: {cache: false}}]
+
+  report:
+    cmd: python -m src.reporting.data_report
+    deps: [data/processed/manifest.parquet, src/reporting/data_report.py]
+    outs: [reports/data_report.html]
+
+  # --- Étapes à brancher plus tard (Partie B et tâches suivantes) ---
+  # extract_features:  cmd: python -m src.fusion.extract_features   # mise en cache des représentations
+  # train_fusion:      cmd: python -m src.fusion.train               # suivi MLflow / W&B
+  # evaluate:          cmd: python -m src.fusion.evaluate

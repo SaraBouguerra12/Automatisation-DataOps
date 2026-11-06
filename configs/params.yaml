@@ -1,0 +1,45 @@
+# Tous les chemins, seuils et paramètres du pipeline (aucune valeur codée en dur dans src/)
+seed: 42
+
+paths:
+  base: data
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+  logs: data/logs
+  reports: reports
+
+ingestion:
+  kaggle:
+    hateful_memes: parthplc/facebook-hateful-meme-dataset
+    sentiment140: kazanova/sentiment140
+  reddit:
+    enabled: false            # nécessite client_id / secret (variables d'environnement)
+    subreddits: [memes, dankmemes, me_irl, wholesomememes]
+    limit: 150
+    exclude_nsfw: true
+
+preprocessing:
+  n_s140: 100000              # tweets conservés (échantillon équilibré)
+  min_img_side: 32
+  max_img_bytes: 15000000
+  n_workers: 8
+
+alignment:
+  phash_max_dist: 4           # distance de Hamming max : images quasi identiques
+  min_text_group_chars: 15
+
+split:
+  val_size: 0.1
+  test_size: 0.1
+  group_col: group_id         # découpage par groupe (anti-fuite)
+
+quality:                      # seuils des contrôles ; un contrôle critique en échec arrête le pipeline
+  max_missing_rate: 0.0
+  max_duplicate_rate: 0.0
+  max_reject_rate: 0.05
+  max_prevalence_gap: 0.02    # écart de prévalence 'hate' entre train / val / test
+  expected_image_min_side: 32
+
+ci:
+  sample_size: 200            # échantillon réduit pour la CI

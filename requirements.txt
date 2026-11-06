@@ -1,0 +1,18 @@
+# À figer avec `pip freeze > requirements.lock` une fois le pipeline stable
+pandas
+pyarrow
+numpy
+pillow
+imagehash
+langdetect
+pandera
+scikit-learn
+pyyaml
+dvc
+kaggle>=1.8.0
+tenacity
+requests
+tqdm
+praw
+pytest
+flake8
