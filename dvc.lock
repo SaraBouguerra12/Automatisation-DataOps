@@ -1,0 +1,262 @@
+schema: '2.0'
+stages:
+  ingest_hateful_memes:
+    cmd: python -m src.ingestion.kaggle_source hateful_memes
+    deps:
+    - path: src/ingestion/kaggle_source.py
+      hash: md5
+      md5: cae5f213937f8ba0612f257e9df54811
+      size: 1586
+    params:
+      configs/params.yaml:
+        ingestion.kaggle.hateful_memes: parthplc/facebook-hateful-meme-dataset
+    outs:
+    - path: data/raw/hateful_memes
+      hash: md5
+      md5: 703fcee6a0a567486aed69ff380b6888.dir
+      size: 7206318699
+      nfiles: 10007
+  ingest_sentiment140:
+    cmd: python -m src.ingestion.kaggle_source sentiment140
+    deps:
+    - path: src/ingestion/kaggle_source.py
+      hash: md5
+      md5: cae5f213937f8ba0612f257e9df54811
+      size: 1586
+    params:
+      configs/params.yaml:
+        ingestion.kaggle.sentiment140: kazanova/sentiment140
+    outs:
+    - path: data/raw/sentiment140
+      hash: md5
+      md5: b4e7ec61fc47d4ca2ba279c06cce1b0e.dir
+      size: 323659810
+      nfiles: 3
+  preprocess:
+    cmd: python -m src.preprocessing.run
+    deps:
+    - path: data/raw/hateful_memes
+      hash: md5
+      md5: 703fcee6a0a567486aed69ff380b6888.dir
+      size: 7206318699
+      nfiles: 10007
+    - path: data/raw/sentiment140
+      hash: md5
+      md5: b4e7ec61fc47d4ca2ba279c06cce1b0e.dir
+      size: 323659810
+      nfiles: 3
+    - path: src/common
+      hash: md5
+      md5: 0f65aeb7ac4d5f717e3e755240a99595.dir
+      size: 21896
+      nfiles: 10
+    - path: src/preprocessing
+      hash: md5
+      md5: 0f164c2e0e97c815bb4a1ef3aa8bb1b7.dir
+      size: 32976
+      nfiles: 8
+    - path: src/validation
+      hash: md5
+      md5: 53afdc7038d922f9bad10281cb2cc7cf.dir
+      size: 26097
+      nfiles: 8
+    params:
+      configs/params.yaml:
+        preprocessing:
+          n_s140: 100000
+          min_img_side: 32
+          max_img_bytes: 15000000
+          n_workers: 8
+        seed: 42
+    outs:
+    - path: data/interim/clean.parquet
+      hash: md5
+      md5: 94bd36fdafc07006c4287fdc64d997d8
+      size: 19341943
+    - path: data/logs/preprocess.json
+      hash: md5
+      md5: 60274a6b0322f65b5731868324375d54
+      size: 1724
+    - path: data/logs/preprocess_rejects.csv
+      hash: md5
+      md5: 24051626d6de6a7ec294ee9077f392c7
+      size: 141035
+  align:
+    cmd: python -m src.alignment.dedup_groups
+    deps:
+    - path: data/interim/clean.parquet
+      hash: md5
+      md5: 94bd36fdafc07006c4287fdc64d997d8
+      size: 19341943
+    - path: src/alignment/dedup_groups.py
+      hash: md5
+      md5: 5381f914d7f200dc92364bc615b36d34
+      size: 3254
+    params:
+      configs/params.yaml:
+        alignment:
+          phash_max_dist: 4
+          min_text_group_chars: 15
+        seed: 42
+    outs:
+    - path: data/interim/aligned.parquet
+      hash: md5
+      md5: 745442db5e6f100f99d829cce1d89962
+      size: 20292394
+    - path: data/logs/align.json
+      hash: md5
+      md5: eae93dab96ed27c903cfe52ff9fef729
+      size: 234
+    - path: data/logs/align_rejects.csv
+      hash: md5
+      md5: 4ade3ad217dc14e0f989d8ea05cdb927
+      size: 35
+  split:
+    cmd: python -m src.alignment.split
+    deps:
+    - path: data/interim/aligned.parquet
+      hash: md5
+      md5: 745442db5e6f100f99d829cce1d89962
+      size: 20292394
+    - path: src/alignment/split.py
+      hash: md5
+      md5: 6e90618994c903a2afffb5107f23b1bc
+      size: 1821
+    params:
+      configs/params.yaml:
+        seed: 42
+        split:
+          val_size: 0.1
+          s140_val_size: 0.05
+          test_size: 0.1
+          group_col: group_id
+    outs:
+    - path: data/interim/split.parquet
+      hash: md5
+      md5: ce87032a295e5c342b320ae262ce80ba
+      size: 20354869
+  build_manifest:
+    cmd: python -m src.export.manifest
+    deps:
+    - path: data/interim/split.parquet
+      hash: md5
+      md5: ce87032a295e5c342b320ae262ce80ba
+      size: 20354869
+    - path: data/logs/align.json
+      hash: md5
+      md5: eae93dab96ed27c903cfe52ff9fef729
+      size: 234
+    - path: data/logs/align_rejects.csv
+      hash: md5
+      md5: 4ade3ad217dc14e0f989d8ea05cdb927
+      size: 35
+    - path: data/logs/preprocess.json
+      hash: md5
+      md5: 60274a6b0322f65b5731868324375d54
+      size: 1724
+    - path: data/logs/preprocess_rejects.csv
+      hash: md5
+      md5: 24051626d6de6a7ec294ee9077f392c7
+      size: 141035
+    - path: src/export/manifest.py
+      hash: md5
+      md5: 8208f07e8547a727f2584436575a1f67
+      size: 2570
+    - path: src/validation/schemas.py
+      hash: md5
+      md5: 32ccc46252b36c51300ee36b54353505
+      size: 2267
+    outs:
+    - path: data/logs/counters.csv
+      hash: md5
+      md5: 3b66637899731fe6e454f4b324c5e78e
+      size: 393
+    - path: data/logs/rejects.csv
+      hash: md5
+      md5: 24051626d6de6a7ec294ee9077f392c7
+      size: 141035
+    - path: data/logs/run_summary.json
+      hash: md5
+      md5: 1a99700de2b25ba85fec1e8ac758edd7
+      size: 2631
+    - path: data/processed/manifest.parquet
+      hash: md5
+      md5: b72d5cc2b7b8346485a43babc889d326
+      size: 15364122
+  quality_gate:
+    cmd: python -m src.validation.quality_gate
+    deps:
+    - path: data/logs/counters.csv
+      hash: md5
+      md5: 3b66637899731fe6e454f4b324c5e78e
+      size: 393
+    - path: data/logs/rejects.csv
+      hash: md5
+      md5: 24051626d6de6a7ec294ee9077f392c7
+      size: 141035
+    - path: data/processed/manifest.parquet
+      hash: md5
+      md5: b72d5cc2b7b8346485a43babc889d326
+      size: 15364122
+    - path: data/raw/hateful_memes
+      hash: md5
+      md5: 703fcee6a0a567486aed69ff380b6888.dir
+      size: 7206318699
+      nfiles: 10007
+    - path: src/validation/labels.py
+      hash: md5
+      md5: 318962dd247c70e73e65623ea4a14284
+      size: 821
+    - path: src/validation/quality_gate.py
+      hash: md5
+      md5: af0aa4d1801550751a008ee841313064
+      size: 5498
+    params:
+      configs/params.yaml:
+        quality:
+          max_missing_rate: 0.0
+          max_duplicate_rate: 0.0
+          max_reject_rate: 0.05
+          max_prevalence_gap: 0.02
+          expected_image_min_side: 32
+    outs:
+    - path: reports/quality.json
+      hash: md5
+      md5: fddb6ec954bfd0f448acee73bdc99fda
+      size: 98
+    - path: reports/quality_tests.csv
+      hash: md5
+      md5: d2cd564d222cc4b060d45a1cc45335ac
+      size: 1013
+  report:
+    cmd: python -m src.reporting.data_report
+    deps:
+    - path: data/logs/counters.csv
+      hash: md5
+      md5: 3b66637899731fe6e454f4b324c5e78e
+      size: 393
+    - path: data/processed/manifest.parquet
+      hash: md5
+      md5: b72d5cc2b7b8346485a43babc889d326
+      size: 15364122
+    - path: reports/quality_tests.csv
+      hash: md5
+      md5: d2cd564d222cc4b060d45a1cc45335ac
+      size: 1013
+    - path: src/reporting/data_report.py
+      hash: md5
+      md5: 4b298fe65383e8ed49de00a5e4529b90
+      size: 1760
+    outs:
+    - path: reports/data_report.html
+      hash: md5
+      md5: 1b3461da7be0c64117e7751ded7113ac
+      size: 7185
+    - path: reports/label_mapping.csv
+      hash: md5
+      md5: edcf3d67b504bfd23b1e2ddba5190eed
+      size: 313
+    - path: reports/stats_summary.csv
+      hash: md5
+      md5: a72b54aef186e6407f186a9cbcc19c44
+      size: 384
