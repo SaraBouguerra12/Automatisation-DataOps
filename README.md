@@ -26,3 +26,11 @@ Tous les chemins et seuils sont dans `configs/params.yaml`. `DATA_BASE` et `REPO
 `ingest_*` -> `preprocess` -> `align` -> `split` -> `build_manifest` -> `quality_gate` -> `report`.
 Le `quality_gate` termine avec le code 1 si un contrÃ´le critique Ã©choue : le pipeline s'arrÃªte.
 Les Ã©tapes de fusion / entraÃ®nement / Ã©valuation (Partie B) sont prÃ©vues en commentaire dans `dvc.yaml`.
+
+## Récupérer les données (DVC)
+Les données ne sont pas dans Git : elles sont versionnées avec DVC (remote `storage`).
+1. Cloner le dépôt et installer les dépendances (voir Installation).
+2. Pointer vers le dossier de stockage partagé (non versionné, propre à chaque machine) :
+   dvc remote modify --local storage url CHEMIN_DU_DOSSIER_PARTAGE
+3. Récupérer les données : dvc pull
+4. Vérifier : dvc status   (doit répondre : Data and pipelines are up to date)
