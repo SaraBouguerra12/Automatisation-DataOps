@@ -40,3 +40,21 @@ quality:                      # seuils des contrôles ; un contrôle critique en
 
 ci:
   sample_size: 200            # échantillon réduit pour la CI
+
+# --- Partie B : fusion multimodale (étapes à brancher sur le pipeline) ---
+experiment:
+  tracking_uri: file:./mlruns
+  name: moderation-multimodale
+
+fusion:
+  encoder: openai/clip-vit-base-patch32   # encodeurs image + texte pré-entraînés (gelés, représentations mises en cache)
+  d: 256                                  # dimension commune
+  n_heads: 4
+  n_layers: 2
+  dropout: 0.1
+  p_modality_dropout: 0.15
+  lambda_aux: 0.3                         # poids des pertes unimodales auxiliaires
+  lr: 0.0001
+  epochs: 10
+  batch_size: 32
+  seeds: [1, 2, 3, 4, 5]

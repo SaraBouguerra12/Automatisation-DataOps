@@ -1,0 +1,4 @@
+# Partie B (fusion) : à installer en plus de requirements.txt
+torch
+transformers
+mlflow

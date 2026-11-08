@@ -53,7 +53,19 @@ stages:
     deps: [data/processed/manifest.parquet, data/logs/counters.csv, reports/quality_tests.csv, src/reporting/data_report.py]
     outs: [reports/data_report.html, reports/stats_summary.csv, reports/label_mapping.csv]
 
-  # --- Étapes à brancher plus tard (Partie B et tâches suivantes) ---
-  # extract_features:  cmd: python -m src.fusion.extract_features   # mise en cache des représentations
-  # train_fusion:      cmd: python -m src.fusion.train               # suivi MLflow / W&B
-  # evaluate:          cmd: python -m src.fusion.evaluate
+  # --- Étapes à brancher (Partie B), modules dans src/fusion/ ---
+  # extract_features:      # CLIP : tokens image [N,50,768] et texte [N,m,512] en fp16, mis en cache (calculés une seule fois)
+  #   cmd: python -m src.fusion.extract_features
+  #   deps: [data/processed/manifest.parquet, src/fusion/encoders.py]
+  #   params: [{configs/params.yaml: [fusion.encoder]}]
+  #   outs: [data/processed/features]
+  # train_fusion:          # suivi MLflow (src/fusion/tracking.py), 5 graines
+  #   cmd: python -m src.fusion.train
+  #   deps: [data/processed/features, src/fusion/model.py]
+  #   params: [{configs/params.yaml: [seed, fusion]}]
+  #   outs: [models/fusion.pt]
+  #   metrics: [{reports/metrics.json: {cache: false}}]
+  # evaluate:              # AUROC, F1, ablations, contribution des modalités
+  #   cmd: python -m src.fusion.evaluate
+  #   deps: [models/fusion.pt, data/processed/features]
+  #   metrics: [{reports/eval.json: {cache: false}}]

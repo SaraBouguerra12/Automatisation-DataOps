@@ -34,3 +34,11 @@ Les données ne sont pas dans Git : elles sont versionnées avec DVC (remote `st
    dvc remote modify --local storage url CHEMIN_DU_DOSSIER_PARTAGE
 3. Récupérer les données : dvc pull
 4. Vérifier : dvc status   (doit répondre : Data and pipelines are up to date)
+
+## Partie B : module de fusion (prototype)
+```bash
+pip install -r requirements-fusion.txt
+pytest -q tests/test_fusion.py          # tests unitaires du module de fusion
+python -m src.fusion.demo_forward       # passe avant sur un batch réel du pipeline (télécharge CLIP, ~600 Mo)
+```
+Fiche de données : `docs/DATA_CARD.md`. Suivi d'expériences : MLflow (`src/fusion/tracking.py`, `mlflow ui`).

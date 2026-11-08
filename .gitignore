@@ -8,3 +8,5 @@ __pycache__/
 .pytest_cache/
 .venv/
 data/logs/ingest_*
+mlruns/
+models/*.pt
