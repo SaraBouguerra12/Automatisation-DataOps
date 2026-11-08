@@ -1,6 +1,6 @@
 # Modération de contenu multimodale (image + texte) — Pipeline DataOps
 
-Pipeline reproductible de collecte et de préparation des données (Hateful Memes, Sentiment140, Reddit optionnel). Projet du module Deep Learning, Tâche 3.
+Pipeline reproductible de collecte et de préparation des données (Hateful Memes, Sentiment140, Reddit optionnel).
 
 ## Installation
 ```bash
